@@ -1,192 +1,159 @@
-import {Building, Car, FileText, Home, Settings, ShoppingCart, Users} from "lucide-react"
-import {Link} from 'react-router-dom';
+import {
+  Building,
+  Car,
+  FileText,
+  Home,
+  Settings,
+  ShoppingCart,
+  Users
+} from "lucide-react";
+import { Link, useLocation } from 'react-router-dom';
 
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarGroup,
-    SidebarGroupContent,
-    SidebarGroupLabel,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarSeparator
-} from "@/components/ui/sidebar"
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator
+} from "@/components/ui/sidebar";
 
 export default function ClasicoSidebar() {
-    return (
+  const location = useLocation();
 
-        <div>
-            <Sidebar className="h-full border-r">
-                <SidebarContent className="overflow-x-hidden bg-gradient-to-b from-blue-900 to-indigo-600">
-                    {/* Main Navigation */}
-                    <SidebarGroup>
-                        <SidebarGroupLabel
-                            className="font-bold text-white text-lg mb-2 px-4 py-2 bg-blue-800 rounded-md">
-                            Menu
-                        </SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                {/* Dashboard - Fixed to match others */}
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <Link
-                                            to="/dashboard"
-                                            className="flex items-center gap-3 p-3 group hover:bg-blue-700/50 rounded-lg transition-colors"
-                                        >
-                                            <Home
-                                                className="h-5 w-5 text-blue-200 group-hover:text-white transition-colors"/>
-                                            <span
-                                                className="font-medium text-blue-100 group-hover:text-white transition-colors">
-                    Dashboard
-                  </span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
+  // Utility function to check if a route is active
+  const isActive = (path) => location.pathname === path;
 
-                                {/* Products */}
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <Link
-                                            to="/products"
-                                            className="flex items-center gap-3 p-3 group hover:bg-blue-700/50 rounded-lg transition-colors"
-                                        >
-                                            <Car
-                                                className="h-5 w-5 text-blue-200 group-hover:text-white transition-colors"/>
-                                            <span
-                                                className="font-medium text-blue-100 group-hover:text-white transition-colors">
-                    Products
-                  </span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
+  // Dynamic class for active vs inactive link
+  const getLinkClasses = (path) =>
+    `flex items-center gap-3 p-3 rounded-lg transition-colors group ${
+      isActive(path)
+        ? 'bg-purple-700 text-white' // Active state
+        : 'text-gray-300 hover:bg-[#1e2a52] hover:text-white' // Inactive/hover state
+    }`;
 
-                                {/* Orders */}
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <Link
-                                            to="/orders"
-                                            className="flex items-center gap-3 p-3 group hover:bg-blue-700/50 rounded-lg transition-colors"
-                                        >
-                                            <ShoppingCart
-                                                className="h-5 w-5 text-blue-200 group-hover:text-white transition-colors"/>
-                                            <span
-                                                className="font-medium text-blue-100 group-hover:text-white transition-colors">
-                    Orders
-                  </span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
+  const getIconClasses = (path) =>
+    `h-5 w-5 transition-colors ${
+      isActive(path)
+        ? 'text-white'
+        : 'text-gray-300 group-hover:text-white'
+    }`;
 
-                                {/* Customers */}
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <Link
-                                            to="/customers"
-                                            className="flex items-center gap-3 p-3 group hover:bg-blue-700/50 rounded-lg transition-colors"
-                                        >
-                                            <Users
-                                                className="h-5 w-5 text-blue-200 group-hover:text-white transition-colors"/>
-                                            <span
-                                                className="font-medium text-blue-100 group-hover:text-white transition-colors">
-                    Customers
-                  </span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
+  const getTextClasses = (path) =>
+    `font-medium transition-colors ${
+      isActive(path)
+        ? 'text-white'
+        : 'text-gray-300 group-hover:text-white'
+    }`;
 
-                                {/* Offices */}
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <Link
-                                            to="/offices"
-                                            className="flex items-center gap-3 p-3 group hover:bg-blue-700/50 rounded-lg transition-colors"
-                                        >
-                                            <Building
-                                                className="h-5 w-5 text-blue-200 group-hover:text-white transition-colors"/>
-                                            <span
-                                                className="font-medium text-blue-100 group-hover:text-white transition-colors">
-                    Offices
-                  </span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
+  return (
+    <div>
+      <Sidebar className="h-full border-r">
+        <SidebarContent className="overflow-x-hidden bg-gradient-to-b from-[#10162F] to-[#3A0CA3]">
+          {/* Main Menu */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="font-bold text-white text-lg mb-2 px-4 py-2 bg-[#1e2a52] rounded-md">
+              Menu
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/dashboard" className={getLinkClasses("/dashboard")}>
+                      <Home className={getIconClasses("/dashboard")} />
+                      <span className={getTextClasses("/dashboard")}>Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
 
-                    <SidebarSeparator className="my-2 bg-blue-700/50"/>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/products" className={getLinkClasses("/products")}>
+                      <Car className={getIconClasses("/products")} />
+                      <span className={getTextClasses("/products")}>Products</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
 
-                    {/* Inventory Section */}
-                    <SidebarGroup>
-                        <SidebarGroupLabel
-                            className="font-bold text-white text-lg mb-2 px-4 py-2 bg-blue-800 rounded-md">
-                            Inventory
-                        </SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu>
-                                {/* All Vehicles */}
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <Link
-                                            to="/inventory/all-vehicles"
-                                            className="flex items-center gap-3 p-3 group hover:bg-blue-700/50 rounded-lg transition-colors"
-                                        >
-                                            <FileText
-                                                className="h-5 w-5 text-blue-200 group-hover:text-white transition-colors"/>
-                                            <span
-                                                className="font-medium text-blue-100 group-hover:text-white transition-colors">
-                    All Vehicles
-                  </span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/orders" className={getLinkClasses("/orders")}>
+                      <ShoppingCart className={getIconClasses("/orders")} />
+                      <span className={getTextClasses("/orders")}>Orders</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
 
-                                {/* In Stock */}
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <Link
-                                            to="/inventory/in-stock"
-                                            className="flex items-center gap-3 p-3 group hover:bg-blue-700/50 rounded-lg transition-colors"
-                                        >
-                                            <FileText
-                                                className="h-5 w-5 text-blue-200 group-hover:text-white transition-colors"/>
-                                            <span
-                                                className="font-medium text-blue-100 group-hover:text-white transition-colors">
-                    In Stock
-                  </span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                </SidebarContent>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/customers" className={getLinkClasses("/customers")}>
+                      <Users className={getIconClasses("/customers")} />
+                      <span className={getTextClasses("/customers")}>Customers</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
 
-                {/* Footer Section */}
-                <SidebarFooter className="overflow-x-hidden bg-blue-800 p-4">
-                    <SidebarMenu>
-                        {/* Settings */}
-                        <SidebarMenuItem>
-                            <SidebarMenuButton asChild>
-                                <Link
-                                    to="/settings"
-                                    className="flex items-center gap-3 p-3 group hover:bg-blue-700/50 rounded-lg transition-colors"
-                                >
-                                    <Settings
-                                        className="h-5 w-5 text-blue-200 group-hover:text-white transition-colors"/>
-                                    <span
-                                        className="font-medium text-blue-100 group-hover:text-white transition-colors">
-                Settings
-              </span>
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    </SidebarMenu>
-                </SidebarFooter>
-            </Sidebar>
-        </div>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/offices" className={getLinkClasses("/offices")}>
+                      <Building className={getIconClasses("/offices")} />
+                      <span className={getTextClasses("/offices")}>Offices</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-    )
+          <SidebarSeparator className="my-2 bg-[#1e2a52]" />
+
+          {/* Inventory Section */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="font-bold text-white text-lg mb-2 px-4 py-2 bg-[#1e2a52] rounded-md">
+              Inventory
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/inventory/all-vehicles" className={getLinkClasses("/inventory/all-vehicles")}>
+                      <FileText className={getIconClasses("/inventory/all-vehicles")} />
+                      <span className={getTextClasses("/inventory/all-vehicles")}>All Vehicles</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/inventory/in-stock" className={getLinkClasses("/inventory/in-stock")}>
+                      <FileText className={getIconClasses("/inventory/in-stock")} />
+                      <span className={getTextClasses("/inventory/in-stock")}>In Stock</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        {/* Footer */}
+        <SidebarFooter className="overflow-x-hidden bg-[#1e2a52] p-4">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link to="/settings" className={getLinkClasses("/settings")}>
+                  <Settings className={getIconClasses("/settings")} />
+                  <span className={getTextClasses("/settings")}>Settings</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+    </div>
+  );
 }
