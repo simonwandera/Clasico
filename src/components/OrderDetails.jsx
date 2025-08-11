@@ -1,338 +1,366 @@
-import React from 'react';
-import { Package, Truck, CreditCard, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/components/ui/select';
+import { ChevronDown, Plus, Edit, X } from 'lucide-react';
 
-export default function OrderDetails({ selectedOrder }) {
-    if (!selectedOrder) {
-        return (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
-                Select an order to view details
-            </div>
-        );
-    }
+const OrderDetails = ({ order, orderItems = [], onOrderUpdate }) => {
+    const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        productName: '',
+        productLine: '',
+        productVendor: '',
+        scale: '',
+        description: '',
+        buyPrice: '',
+        msrp: '',
+        quantityInStock: ''
+    });
+
+    const productLines = [
+        'Classic Cars',
+        'Motorcycles',
+        'Planes',
+        'Ships',
+        'Trains',
+        'Trucks and Buses',
+        'Vintage Cars'
+    ];
+
+    const handleInputChange = (field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            // API call to create order/product
+            console.log('Creating order with data:', formData);
+
+            // Reset form and close dialog
+            setFormData({
+                productName: '',
+                productLine: '',
+                productVendor: '',
+                scale: '',
+                description: '',
+                buyPrice: '',
+                msrp: '',
+                quantityInStock: ''
+            });
+            setIsCreateOrderOpen(false);
+
+            // Refresh order data if callback provided
+            if (onOrderUpdate) {
+                onOrderUpdate();
+            }
+        } catch (error) {
+            console.error('Error creating order:', error);
+        }
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-KE', {
+            style: 'currency',
+            currency: 'KES',
+            minimumFractionDigits: 2
+        }).format(amount || 0);
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric'
+        });
+    };
+
+    const calculateTotal = () => {
+        return orderItems.reduce((total, item) => total + (item.total || 0), 0);
+    };
 
     return (
-        <div className="flex-1 overflow-y-auto bg-gray-50">
-            <div className="max-w-4xl mx-auto p-6">
-                {/* Header */}
-                <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        Order {selectedOrder.orderNumber}
-                    </h1>
-                    <p className="text-gray-600">
-                        Placed on {selectedOrder.orderDate ? new Date(selectedOrder.orderDate).toLocaleDateString() : 'No date available'}
-                    </p>
-                    <div className="mt-2">
-                        <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
-                            selectedOrder.status?.toLowerCase() === 'delivered' || selectedOrder.status?.toLowerCase() === 'shipped'
-                                ? 'bg-green-100 text-green-800'
-                                : selectedOrder.status?.toLowerCase() === 'processing'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                            {selectedOrder.status || 'Pending'}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Order Information */}
-                <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Information</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <p className="text-sm text-gray-500 mb-1">Order Number</p>
-                            <p className="text-gray-900">{selectedOrder.orderNumber}</p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500 mb-1">Order Date</p>
-                            <p className="text-gray-900">
-                                {selectedOrder.orderDate ? new Date(selectedOrder.orderDate).toLocaleDateString() : 'Not available'}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500 mb-1">Required Date</p>
-                            <p className="text-gray-900">
-                                {selectedOrder.requiredDate ? new Date(selectedOrder.requiredDate).toLocaleDateString() : 'Not specified'}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500 mb-1">Shipped Date</p>
-                            <p className="text-gray-900">
-                                {selectedOrder.shippedDate ? new Date(selectedOrder.shippedDate).toLocaleDateString() : 'Not shipped yet'}
-                            </p>
-                        </div>
-                        <div className="md:col-span-2">
-                            <p className="text-sm text-gray-500 mb-1">Comments</p>
-                            <p className="text-gray-900">{selectedOrder.comments || 'No comments'}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Customer Information */}
-                {selectedOrder.customer && (
-                    <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Customer Information</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Customer Name</p>
-                                <p className="text-gray-900">{selectedOrder.customer.customerName || 'Not provided'}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Contact Person</p>
-                                <p className="text-gray-900">
-                                    {[selectedOrder.customer.contactFirstName, selectedOrder.customer.contactLastName]
-                                        .filter(Boolean).join(' ') || 'Not provided'}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Phone</p>
-                                <p className="text-gray-900">{selectedOrder.customer.phone || 'Not provided'}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Email</p>
-                                <p className="text-gray-900">{selectedOrder.customer.email || 'Not provided'}</p>
-                            </div>
-                            <div className="md:col-span-2">
-                                <p className="text-sm text-gray-500 mb-1">Address</p>
-                                <p className="text-gray-900">
-                                    {[
-                                        selectedOrder.customer.addressLine1,
-                                        selectedOrder.customer.addressLine2,
-                                        selectedOrder.customer.city,
-                                        selectedOrder.customer.state,
-                                        selectedOrder.customer.country
-                                    ].filter(Boolean).join(', ') || 'Not provided'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Order Items */}
-                <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Package className="w-5 h-5 mr-2" />
-                        Order Items
-                    </h2>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Product
-                                </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Quantity
-                                </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Unit Price
-                                </th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Total
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                            {selectedOrder.orderDetails && selectedOrder.orderDetails.length > 0 ? (
-                                selectedOrder.orderDetails.map((item, index) => (
-                                    <tr key={index}>
-                                        <td className="px-4 py-4 text-sm text-gray-900">
-                                            {item.product?.productName || item.productCode || item.productName || `Product ${index + 1}`}
-                                        </td>
-                                        <td className="px-4 py-4 text-sm text-gray-900">
-                                            {item.quantityOrdered || item.quantity || 0}
-                                        </td>
-                                        <td className="px-4 py-4 text-sm text-gray-900">
-                                            Ksh{item.priceEach || item.unitPrice || item.price || 0}
-                                        </td>
-                                        <td className="px-4 py-4 text-sm font-medium text-gray-900">
-                                            Ksh{((item.quantityOrdered || item.quantity || 0) * (item.priceEach || item.unitPrice || item.price || 0)).toFixed(2)}
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : selectedOrder.items && selectedOrder.items.length > 0 ? (
-                                selectedOrder.items.map((item, index) => (
-                                    <tr key={index}>
-                                        <td className="px-4 py-4 text-sm text-gray-900">
-                                            {item.product || item.productName || `Product ${index + 1}`}
-                                        </td>
-                                        <td className="px-4 py-4 text-sm text-gray-900">
-                                            {item.quantity || 1}
-                                        </td>
-                                        <td className="px-4 py-4 text-sm text-gray-900">
-                                            Ksh{item.price || item.unitPrice || 0}
-                                        </td>
-                                        <td className="px-4 py-4 text-sm font-medium text-gray-900">
-                                            Ksh{item.total || (item.quantity * item.price) || 0}
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
-                                        No items found for this order
-                                    </td>
-                                </tr>
-                            )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Order Total */}
-                    <div className="mt-4 border-t pt-4">
-                        <div className="flex justify-end">
-                            <div className="text-right">
-                                <p className="text-sm text-gray-500 mb-1">Total Amount</p>
-                                <p className="text-xl font-bold text-gray-900">
-                                    Ksh{selectedOrder.totalAmount ||
-                                    selectedOrder.total ||
-                                    (selectedOrder.orderDetails && selectedOrder.orderDetails.length > 0
-                                        ? selectedOrder.orderDetails.reduce((total, item) =>
-                                            total + ((item.quantityOrdered || item.quantity || 0) * (item.priceEach || item.unitPrice || item.price || 0)), 0
-                                        ).toFixed(2)
-                                        : '0.00')}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Shipping & Payment Info */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                    {/* Shipping Information */}
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                            <Truck className="w-5 h-5 mr-2" />
-                            Shipping Information
-                        </h2>
-                        <div className="space-y-3">
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Shipping Method</p>
-                                <p className="text-gray-900">
-                                    {selectedOrder.shippingMethod || selectedOrder.shipping?.method || 'Standard'}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Tracking Number</p>
-                                <p className="text-gray-900">
-                                    {selectedOrder.trackingNumber || selectedOrder.shipping?.trackingNumber || 'Not available'}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Carrier</p>
-                                <p className="text-gray-900">
-                                    {selectedOrder.carrier || selectedOrder.shipping?.carrier || 'Not specified'}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Status</p>
-                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                    selectedOrder.status?.toLowerCase() === 'delivered'
-                                        ? 'bg-green-100 text-green-800'
-                                        : selectedOrder.status?.toLowerCase() === 'shipped'
-                                            ? 'bg-blue-100 text-blue-800'
-                                            : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                    {selectedOrder.status || 'Pending'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Payment Information */}
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                            <CreditCard className="w-5 h-5 mr-2" />
-                            Payment Information
-                        </h2>
-                        <div className="space-y-3">
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Payment Method</p>
-                                <p className="text-gray-900">
-                                    {selectedOrder.paymentMethod || selectedOrder.payment?.method || 'Not specified'}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Card</p>
-                                <p className="text-gray-900">
-                                    {selectedOrder.cardLast4
-                                        ? `•••• •••• •••• ${selectedOrder.cardLast4}`
-                                        : selectedOrder.payment?.cardLast4
-                                            ? `•••• •••• •••• ${selectedOrder.payment.cardLast4}`
-                                            : 'Not available'}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Payment Date</p>
-                                <p className="text-gray-900">
-                                    {selectedOrder.paymentDate
-                                        ? new Date(selectedOrder.paymentDate).toLocaleDateString()
-                                        : selectedOrder.payment?.date || 'Not available'}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">Amount Paid</p>
-                                <p className="text-gray-900 font-semibold">
-                                    Ksh{selectedOrder.totalAmount || selectedOrder.total || 0}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Order History */}
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Clock className="w-5 h-5 mr-2" />
-                        Order History
-                    </h2>
-                    <div className="space-y-4">
-                        {selectedOrder.history && selectedOrder.history.length > 0 ? (
-                            selectedOrder.history.map((event, index) => (
-                                <div key={index} className="flex items-center">
-                                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <Package className="w-4 h-4 text-blue-600" />
-                                    </div>
-                                    <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-900">{event.status}</p>
-                                        <p className="text-sm text-gray-500">
-                                            {event.date ? new Date(event.date).toLocaleDateString() : 'No date'}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            <>
-                                <div className="flex items-center">
-                                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <Package className="w-4 h-4 text-blue-600" />
-                                    </div>
-                                    <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-900">Order Created</p>
-                                        <p className="text-sm text-gray-500">
-                                            {selectedOrder.orderDate
-                                                ? new Date(selectedOrder.orderDate).toLocaleDateString()
-                                                : selectedOrder.date || 'No date available'}
-                                        </p>
-                                    </div>
-                                </div>
-                                {selectedOrder.shippedDate && (
-                                    <div className="flex items-center">
-                                        <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                            <Truck className="w-4 h-4 text-green-600" />
-                                        </div>
-                                        <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-900">Order Shipped</p>
-                                            <p className="text-sm text-gray-500">
-                                                {new Date(selectedOrder.shippedDate).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </>
+        <div className="h-full flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex-shrink-0 border-b bg-white p-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">
+                            Order {order?.orderNumber || 'Loading...'}
+                        </h1>
+                        <p className="text-sm text-gray-600 mt-1">
+                            Placed on {formatDate(order?.orderDate)}
+                        </p>
+                        {order?.status && (
+                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full mt-2 ${
+                                order.status === 'Shipped' ? 'bg-green-100 text-green-800' :
+                                    order.status === 'Processing' ? 'bg-yellow-100 text-yellow-800' :
+                                        order.status === 'In Process' ? 'bg-blue-100 text-blue-800' :
+                                            'bg-gray-100 text-gray-800'
+                            }`}>
+                {order.status}
+              </span>
                         )}
+                    </div>
+
+                    {/* Action Dropdown */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="gap-2">
+                                Actions
+                                <ChevronDown className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                            <Dialog open={isCreateOrderOpen} onOpenChange={setIsCreateOrderOpen}>
+                                <DialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Create Order
+                                    </DropdownMenuItem>
+                                </DialogTrigger>
+                            </Dialog>
+
+                            <DropdownMenuItem>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Update Order
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem className="text-orange-600">
+                                <X className="h-4 w-4 mr-2" />
+                                Cancel Order
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+                <div className="p-6 space-y-6">
+                    {/* Order Information */}
+                    <div className="bg-white rounded-lg border">
+                        <div className="px-6 py-4 border-b">
+                            <h2 className="text-lg font-semibold text-gray-900">Order Information</h2>
+                        </div>
+                        <div className="p-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Order Number</label>
+                                            <p className="mt-1 text-sm text-gray-900">{order?.orderNumber || 'N/A'}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Required Date</label>
+                                            <p className="mt-1 text-sm text-gray-900">{formatDate(order?.requiredDate)}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Comments</label>
+                                            <p className="mt-1 text-sm text-gray-900">{order?.comments || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Order Date</label>
+                                            <p className="mt-1 text-sm text-gray-900">{formatDate(order?.orderDate)}</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Shipped Date</label>
+                                            <p className="mt-1 text-sm text-gray-900">{formatDate(order?.shippedDate)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Order Items */}
+                    <div className="bg-white rounded-lg border">
+                        <div className="px-6 py-4 border-b">
+                            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                📦 Order Items
+                            </h2>
+                        </div>
+                        <div className="overflow-hidden">
+                            {orderItems && orderItems.length > 0 ? (
+                                <>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                            {orderItems.map((item, index) => (
+                                                <tr key={index} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4 text-sm text-gray-900">{item.productName}</td>
+                                                    <td className="px-6 py-4 text-sm text-gray-900">{item.quantityOrdered}</td>
+                                                    <td className="px-6 py-4 text-sm text-gray-900">{formatCurrency(item.priceEach)}</td>
+                                                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{formatCurrency(item.total)}</td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="px-6 py-4 bg-gray-50 border-t">
+                                        <div className="flex justify-end">
+                                            <div className="text-lg font-semibold text-gray-900">
+                                                Total Amount: {formatCurrency(calculateTotal())}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="px-6 py-12 text-center">
+                                    <p className="text-gray-500">No items found for this order</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* Create Order Dialog */}
+            <Dialog open={isCreateOrderOpen} onOpenChange={setIsCreateOrderOpen}>
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Add Product</DialogTitle>
+                    </DialogHeader>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="productName">Product Name</Label>
+                            <Input
+                                id="productName"
+                                placeholder="Enter product name"
+                                value={formData.productName}
+                                onChange={(e) => handleInputChange('productName', e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="productLine">Product Line</Label>
+                            <Select value={formData.productLine} onValueChange={(value) => handleInputChange('productLine', value)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select product line" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {productLines.map((line) => (
+                                        <SelectItem key={line} value={line}>{line}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="productVendor">Product Vendor</Label>
+                            <Input
+                                id="productVendor"
+                                placeholder="Enter product vendor"
+                                value={formData.productVendor}
+                                onChange={(e) => handleInputChange('productVendor', e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="scale">Scale</Label>
+                            <Input
+                                id="scale"
+                                placeholder="Enter scale"
+                                value={formData.scale}
+                                onChange={(e) => handleInputChange('scale', e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Description</Label>
+                            <Textarea
+                                id="description"
+                                placeholder="Enter description"
+                                value={formData.description}
+                                onChange={(e) => handleInputChange('description', e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="buyPrice">Buy Price</Label>
+                            <Input
+                                id="buyPrice"
+                                type="number"
+                                step="0.01"
+                                placeholder="Enter buy price"
+                                value={formData.buyPrice}
+                                onChange={(e) => handleInputChange('buyPrice', e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="msrp">MSRP</Label>
+                            <Input
+                                id="msrp"
+                                type="number"
+                                step="0.01"
+                                placeholder="Enter MSRP"
+                                value={formData.msrp}
+                                onChange={(e) => handleInputChange('msrp', e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="quantityInStock">Quantity in Stock</Label>
+                            <Input
+                                id="quantityInStock"
+                                type="number"
+                                placeholder="Enter quantity in stock"
+                                value={formData.quantityInStock}
+                                onChange={(e) => handleInputChange('quantityInStock', e.target.value)}
+                            />
+                        </div>
+
+                        <div className="flex justify-end pt-4">
+                            <Button type="submit" className="w-full">
+                                Add Product
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
-}
+};
+
+export default OrderDetails;
