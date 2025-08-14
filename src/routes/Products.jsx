@@ -138,9 +138,9 @@ export default function Products() {
             key={product.id}
             id={product.id}
             name={product.productName}
-            price={product.MSRP || product.buyPrice || 0}
+            price={product.msrp || product.buyPrice || 0}
             originalPrice={product.originalPrice}
-            category={product.productLine || product.category || 'General'}
+            category={product.productLine?.textDescription || product.category || 'General'} // ✅ string now
             imageUrl={product.image || product.productLine?.image || "/placeholder-product.jpg"}
             rating={product.rating || 0}
             isNew={product.isNew || false}

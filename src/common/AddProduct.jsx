@@ -1,5 +1,8 @@
 import { toast } from "sonner"
 
+// Base URL configuration
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080"
+
 export function AddProduct({ onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -8,16 +11,21 @@ export function AddProduct({ onSuccess }) {
     const product = {
       productName: form.productName.value,
       productCode: form.productCode.value,
-      msrp: parseFloat(form.price.value),
+      price: parseFloat(form.price.value), // This will map to MSRP in backend
       category: form.category.value,
-      description: form.description.value,
-      imageUrl: form.imageUrl.value,
+      productDescription: form.description.value,
+      // Note: imageUrl is handled through ProductLine relationship in backend
+      // imageUrl: form.imageUrl.value, // Remove this line
+      quantityInStock: parseInt(form.stock.value) || 0,
+      isNew: form.isNew.checked,
+      isBestSeller: form.isBestSeller.checked,
+      rating: parseFloat(form.rating.value) || 0,
     }
 
     console.log("Submitting product:", product);
 
     try {
-      const response = await fetch("http://localhost:8080/api/product", {
+      const response = await fetch(`${BASE_URL}/api/product`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -79,7 +87,7 @@ export function AddProduct({ onSuccess }) {
 
       <div className="space-y-2">
         <label htmlFor="price" className="text-sm font-medium text-gray-700">
-          Price *
+          Price (Ksh) *
         </label>
         <input 
           id="price"
@@ -112,6 +120,36 @@ export function AddProduct({ onSuccess }) {
       </div>
 
       <div className="space-y-2">
+        <label htmlFor="stock" className="text-sm font-medium text-gray-700">
+          Stock Quantity
+        </label>
+        <input 
+          id="stock"
+          name="stock" 
+          type="number" 
+          min="0"
+          placeholder="0" 
+          className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors" 
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="rating" className="text-sm font-medium text-gray-700">
+          Rating (0-5)
+        </label>
+        <input 
+          id="rating"
+          name="rating" 
+          type="number" 
+          step="0.1"
+          min="0"
+          max="5"
+          placeholder="0" 
+          className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors" 
+        />
+      </div>
+
+      <div className="space-y-2">
         <label htmlFor="description" className="text-sm font-medium text-gray-700">
           Description
         </label>
@@ -124,6 +162,7 @@ export function AddProduct({ onSuccess }) {
         />
       </div>
 
+      {/* Remove Image URL field since images come from ProductLine
       <div className="space-y-2">
         <label htmlFor="imageUrl" className="text-sm font-medium text-gray-700">
           Image URL
@@ -135,6 +174,33 @@ export function AddProduct({ onSuccess }) {
           placeholder="https://example.com/image.jpg" 
           className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors" 
         />
+      </div>
+      */}
+
+      <div className="flex gap-4">
+        <div className="flex items-center">
+          <input 
+            id="isNew"
+            name="isNew" 
+            type="checkbox"
+            className="mr-2" 
+          />
+          <label htmlFor="isNew" className="text-sm font-medium text-gray-700">
+            New Product
+          </label>
+        </div>
+
+        <div className="flex items-center">
+          <input 
+            id="isBestSeller"
+            name="isBestSeller" 
+            type="checkbox"
+            className="mr-2" 
+          />
+          <label htmlFor="isBestSeller" className="text-sm font-medium text-gray-700">
+            Best Seller
+          </label>
+        </div>
       </div>
 
       <div className="pt-4">
