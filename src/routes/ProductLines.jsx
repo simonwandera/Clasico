@@ -89,14 +89,18 @@ const ProductLines = () => {
     setFilteredProductLines(sorted);
   }, [sortBy, sortOrder]);
 
-  const handleAddProductLine = async (newProductLineData) => {
-    try {
-      await addProductLine(newProductLineData);
-      setIsAddDialogOpen(false);
-    } catch (error) {
-      console.error("Failed to add product line:", error);
-    }
-  };
+    const handleAddProductLine = async (newProductLineData) => {
+        try {
+            await addProductLine(newProductLineData);
+            setIsAddDialogOpen(false);
+
+            // If you want to ensure complete refresh from server:
+            triggerRefresh();
+        } catch (error) {
+            console.error("Failed to add product line:", error);
+        }
+    };
+
 
   const handleEditProductLine = async (updatedProductLineData) => {
     try {
@@ -135,6 +139,8 @@ const ProductLines = () => {
   const toggleSortOrder = () => {
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   };
+
+
 
   // --- Loading & Error states omitted for brevity (same as your code) ---
 

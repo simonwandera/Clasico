@@ -1,5 +1,5 @@
 import {useQuery} from "@tanstack/react-query";
-import {API_BASE_URL} from "../Config.js";
+import API_BASE_URL from "../Config.js";
 
 export default function Dashboard() {
 
@@ -8,9 +8,8 @@ export default function Dashboard() {
         queryFn: getKpis
     })
 
-
     const {data: recentActivities} = useQuery({
-        queryKey: ['dependent'],
+        queryKey: ['recent'],
         queryFn: getRecentActivities
     });
 

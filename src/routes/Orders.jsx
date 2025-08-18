@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Package, Truck, CreditCard, Clock, Loader2, AlertCircle, Plus } from 'lucide-react';
-import { ordersApi, orderDetailsApi, searchOrders } from '../lib/ordersApi';
+import { Search, Package, Loader2, AlertCircle } from 'lucide-react';
+import { ordersApi, searchOrders } from '../lib/ordersApi';
 import OrderDetails from '../components/OrderDetails';
 
 export default function Orders() {
@@ -113,7 +113,7 @@ export default function Orders() {
     const filteredOrders = filterOrders(orders, activeFilter);
 
     const OrdersList = () => (
-        <div className="w-80 bg-white border-r border-gray-200 h-full">
+        <div className="w-full bg-white border-r border-gray-200 h-full">
             {/* Search Bar */}
             <div className="p-4 border-b border-gray-200">
                 <div className="relative">
@@ -133,10 +133,10 @@ export default function Orders() {
                 {['All', 'Open', 'Shipped', 'Delivered'].map((tab) => (
                     <button
                         key={tab}
-                        className={`flex-1 py-3 px-4 text-sm font-medium ${
+                        className={`flex-1 py-2 px-4 text-sm font-medium ${
                             tab === activeFilter
                                 ? 'text-blue-600 border-b-2 border-blue-600'
-                                : 'text-gray-500 hover:text-gray-700'
+                                : 'text-gray-500 hover:text-white'
                         }`}
                         onClick={() => setActiveFilter(tab)}
                     >
@@ -173,7 +173,7 @@ export default function Orders() {
             {!loading && !error && (
                 <div className="overflow-y-auto">
                     {filteredOrders.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">
+                        <div className="p-8  text-center text-gray-500">
                             <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                             <h3 className="text-lg font-medium text-gray-900 mb-2">
                                 {searchTerm ? 'No orders found' : 'No orders yet'}
@@ -250,15 +250,12 @@ export default function Orders() {
 
         if (orders.length === 0 && !searchTerm) {
             return (
-                <div className="flex-1 flex items-center justify-center bg-gray-50">
+                <div className="flex flex-1 items-center justify-center mx-auto p-6">
                     <div className="text-center p-8 max-w-md">
                         <div className="w-24 h-24 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
                             <Package className="w-12 h-12 text-blue-600" />
                         </div>
                         <h2 className="text-2xl font-semibold text-gray-900 mb-2">No Orders Yet</h2>
-
-
-
                     </div>
                 </div>
             );
