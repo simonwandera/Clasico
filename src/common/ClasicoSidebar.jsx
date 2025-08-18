@@ -5,7 +5,8 @@ import {
   Home,
   Settings,
   ShoppingCart,
-  Users
+  Users,
+  Boxes
 } from "lucide-react";
 import { Link, useLocation } from 'react-router-dom';
 
@@ -75,6 +76,15 @@ export default function ClasicoSidebar() {
                     <Link to="/products" className={getLinkClasses("/products")}>
                       <Car className={getIconClasses("/products")} />
                       <span className={getTextClasses("/products")}>Products</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/product-lines" className={getLinkClasses("/product-lines")}>
+                      <Boxes className={getIconClasses("/product-lines")} />
+                      <span className={getTextClasses("/product-lines")}>Product Lines</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
