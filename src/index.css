@@ -1,9 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Removed unsupported @custom-variant at-rule */
+@custom-variant dark (&:is(.dark *));
 
-:root {
+@theme {
     --color-primary: #1b87cc; /* Your primary color */
     --color-secondary: #0c4366; /* Your secondary color */
 }
@@ -69,6 +69,18 @@ a:hover {
 h1 {
     font-size: 3.2em;
     line-height: 1.1;
+    color: #1c254f;
+}
+
+h2 {
+    font-size: 1.2em;
+    line-height: 2.1;
+    color: #1c254f;
+}
+
+p {
+    font-size: 1.3em;
+    color: #000;
 }
 
 button {
@@ -107,7 +119,7 @@ button:focus-visible {
     }
 }
 
-:root {
+@theme inline {
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);

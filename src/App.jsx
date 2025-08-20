@@ -4,6 +4,7 @@ import Dashboard from "./routes/Dashboard";
 import Products from "./routes/Products";
 import NotFound from "./routes/NotFound.jsx";
 import Orders from "@/routes/Orders.jsx";
+import ProductLines from './routes/ProductLines';
 
 export default function App() {
     return (
@@ -13,6 +14,7 @@ export default function App() {
                     <Route index element={<Dashboard />} />
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="products" element={<Products />} />
+                    <Route path="product-lines" element={<ProductLines />} />
                     <Route path="orders" element={<Orders />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
