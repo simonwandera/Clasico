@@ -1,5 +1,5 @@
 // API base URL - updated to your backend URL
-import { API_BASE_URL } from '../Config';
+import  API_BASE_URL  from '../Config';
 // Generic API request handler with error handling
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
