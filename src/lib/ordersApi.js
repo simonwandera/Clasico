@@ -1,6 +1,5 @@
 // API base URL - updated to your backend URL
-const API_BASE_URL = 'http://localhost:8083/api'; // Your backend URL
-
+import  API_BASE_URL  from '../Config';
 // Generic API request handler with error handling
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;

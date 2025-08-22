@@ -3,7 +3,7 @@ import Layout from './Layout';
 import Dashboard from "./routes/Dashboard";
 import Products from "./routes/Products";
 import NotFound from "./routes/NotFound.jsx";
-import Orders from "@/routes/Orders.jsx";
+import OrdersPage from "@/routes/Orders.jsx";
 import ProductLines from './routes/ProductLines';
 
 export default function App() {
@@ -15,7 +15,7 @@ export default function App() {
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="products" element={<Products />} />
                     <Route path="product-lines" element={<ProductLines />} />
-                    <Route path="orders" element={<Orders />} />
+                    <Route path="orders" element={<OrdersPage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
             </Routes>
