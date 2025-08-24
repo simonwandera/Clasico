@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Bell,
     Plus,
@@ -11,12 +11,14 @@ import {
     TrendingUp,
     TrendingDown,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Loader2
 } from 'lucide-react';
 
 import CreateOrderForm from '../components/CreateOrderForm';
+import ordersApi from '../lib/ordersApi';
 
-// Catalyst-style Button Component
+// Keep all your existing component definitions (Button, Input, Badge, etc.)
 const Button = ({
                     children,
                     variant = 'primary',
@@ -29,7 +31,7 @@ const Button = ({
 
     const variants = {
         primary: 'bg-zinc-900 text-white hover:bg-zinc-800 focus:ring-zinc-900',
-        secondary: 'bg-white text-white border border-zinc-300 hover:bg-zinc-50 focus:ring-zinc-500',
+        secondary: 'bg-white text-zinc-700 border border-zinc-300 hover:bg-zinc-50 focus:ring-zinc-500',
         ghost: 'text-zinc-700 hover:bg-zinc-100 focus:ring-zinc-500'
     };
 
@@ -50,15 +52,13 @@ const Button = ({
     );
 };
 
-// Catalyst-style Input Component
 const Input = ({ className = '', ...props }) => (
     <input
-        className={`block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-700 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${className}`}
+        className={`block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500 ${className}`}
         {...props}
     />
 );
 
-// Catalyst-style Badge Component
 const Badge = ({ children, variant = 'default', className = '' }) => {
     const variants = {
         default: 'bg-zinc-100 text-zinc-800',
@@ -70,12 +70,11 @@ const Badge = ({ children, variant = 'default', className = '' }) => {
 
     return (
         <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${variants[variant]} ${className}`}>
-      {children}
-    </span>
+            {children}
+        </span>
     );
 };
 
-// Catalyst-style Checkbox Component
 const Checkbox = ({ checked, onCheckedChange, ...props }) => (
     <input
         type="checkbox"
@@ -86,7 +85,7 @@ const Checkbox = ({ checked, onCheckedChange, ...props }) => (
     />
 );
 
-// Catalyst-style Dropdown Component
+// Keep all your dropdown components as they are
 const DropdownMenu = ({ children }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -134,7 +133,6 @@ const DropdownMenuItem = ({ children, className = '', ...props }) => (
     </button>
 );
 
-// Catalyst-style Tab Components
 const Tabs = ({ children, value, onValueChange }) => (
     <div>
         {React.Children.map(children, child =>
@@ -144,7 +142,7 @@ const Tabs = ({ children, value, onValueChange }) => (
 );
 
 const TabsList = ({ children, value, onValueChange }) => (
-    <div className="flex space-x-1 rounded-lg bg-white p-1">
+    <div className="flex space-x-1 rounded-lg bg-zinc-800 p-1">
         {React.Children.map(children, child =>
             React.cloneElement(child, { value, onValueChange })
         )}
@@ -157,14 +155,29 @@ const TabsTrigger = ({ children, value: tabValue, value: currentValue, onValueCh
         className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
             currentValue === tabValue
                 ? 'bg-zinc-900 text-white shadow-sm'
-                : 'text-white hover:text-zinc-900 hover:bg-zinc-100'
+                : 'text-zinc-300 hover:text-white hover:bg-zinc-700'
         }`}
     >
         {children}
     </button>
 );
 
+// Currency formatting utility
+const formatCurrency = (amount = 'KES') => {
+    if (amount == null) return 'KSh 0.00';
+
+    const number = parseFloat(amount);
+    if (isNaN(number)) return 'KSh 0.00';
+
+    return new Intl.NumberFormat('en-KE', {
+        style: 'currency',
+        currency: 'KES',
+        minimumFractionDigits: 2
+    }).format(number).replace('KES', 'KSh');
+};
+
 const OrdersPage = () => {
+    // State management
     const [selectedOrders, setSelectedOrders] = useState(new Set());
     const [activeTab, setActiveTab] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -174,90 +187,118 @@ const OrdersPage = () => {
         { id: 2, label: 'Emily Carter' }
     ]);
 
-    // Sample data
-    const stats = [
-        {
-            title: 'Total Orders',
-            value: '1,247',
-            change: '+12% this month',
-            trending: 'up'
-        },
-        {
-            title: 'Revenue Today',
-            value: '₹2,84,560',
-            change: '+8.2%',
-            trending: 'up'
-        },
-        {
-            title: 'Pending Orders',
-            value: '23',
-            change: '-3 from yesterday',
-            trending: 'down'
-        },
-        {
-            title: 'Avg Order Value',
-            value: '₹1,890',
-            change: '+5.4%',
-            trending: 'up'
-        }
-    ];
+    // API state
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    const [pageSize] = useState(25);
 
-    const orders = [
-        {
-            id: '123456',
-            customer: 'Emily Carter',
-            email: 'emily.carter@email.com',
-            amount: '₹2,850',
-            status: 'processing',
-            date: 'Aug 14, 2025',
-            time: '10:30 AM',
-            items: 2,
-            shipping: 'Express Shipping',
-            priority: 'HIGH'
-        },
-        {
-            id: '123455',
-            customer: 'John Smith',
-            email: 'john.smith@email.com',
-            amount: '₹1,240',
-            status: 'shipped',
-            date: 'Aug 14, 2025',
-            time: '09:15 AM',
-            items: 1,
-            shipping: 'Standard Shipping'
-        },
-        {
-            id: '123454',
-            customer: 'Sarah Johnson',
-            email: 'sarah.j@email.com',
-            amount: '₹4,320',
-            status: 'pending',
-            date: 'Aug 13, 2025',
-            time: '11:45 PM',
-            items: 3,
-            shipping: 'Express Shipping'
-        },
-        {
-            id: '123453',
-            customer: 'Mike Wilson',
-            email: 'm.wilson@email.com',
-            amount: '₹890',
-            status: 'delivered',
-            date: 'Aug 13, 2025',
-            time: '08:20 AM',
-            items: 1,
-            shipping: 'Standard Shipping'
-        }
-    ];
+    // Fetch orders from API
+    useEffect(() => {
+        fetchOrders();
+    }, [currentPage]);
 
-    const statusCounts = {
-        all: 1247,
-        pending: 23,
-        processing: 67,
-        shipped: 156,
-        delivered: 998,
-        cancelled: 3
+    const fetchOrders = async () => {
+        try {
+            setLoading(true);
+            const response = await ordersApi.getAllOrders(currentPage, pageSize, 'createdAt', 'desc');
+
+            // Handle different response structures
+            const ordersData = response.content || response.data || response;
+            const totalPagesData = response.totalPages || Math.ceil((response.totalElements || ordersData.length) / pageSize);
+            const totalElementsData = response.totalElements || ordersData.length;
+
+            setOrders(ordersData);
+            setTotalPages(totalPagesData);
+            setTotalElements(totalElementsData);
+
+        } catch (err) {
+            setError(err.message);
+            console.error('Failed to fetch orders:', err);
+        } finally {
+            setLoading(false);
+        }
     };
+
+    // Filter orders based on active tab (client-side filtering since no status endpoint)
+    const getFilteredOrders = () => {
+        if (activeTab === 'all') return orders;
+        return orders.filter(order =>
+            order.status?.toLowerCase() === activeTab.toLowerCase()
+        );
+    };
+
+    // Calculate status counts
+    const calculateStatusCounts = () => {
+        const counts = {
+            all: orders.length,
+            pending: 0,
+            processing: 0,
+            shipped: 0,
+            delivered: 0,
+            cancelled: 0
+        };
+
+        orders.forEach(order => {
+            const status = order.status?.toLowerCase();
+            if (counts.hasOwnProperty(status)) {
+                counts[status]++;
+            }
+        });
+
+        return counts;
+    };
+
+    const statusCounts = calculateStatusCounts();
+    const filteredOrders = getFilteredOrders();
+
+    // Calculate stats from real data
+    const calculateStats = () => {
+        const today = new Date().toDateString();
+        const todayOrders = orders.filter(order =>
+            new Date(order.createdAt || order.date).toDateString() === today
+        );
+
+        const todayRevenue = todayOrders.reduce((sum, order) =>
+            sum + (parseFloat(order.totalAmount || order.amount || 0)), 0
+        );
+
+        const avgOrderValue = orders.length > 0
+            ? orders.reduce((sum, order) => sum + (parseFloat(order.totalAmount || order.amount || 0)), 0) / orders.length
+            : 0;
+
+        return [
+            {
+                title: 'Total Orders',
+                value: totalElements.toLocaleString(),
+                change: '+12% this month',
+                trending: 'up'
+            },
+            {
+                title: 'Revenue Today',
+                value: formatCurrency(todayRevenue),
+                change: '+8.2%',
+                trending: 'up'
+            },
+            {
+                title: 'Pending Orders',
+                value: statusCounts.pending.toString(),
+                change: '-3 from yesterday',
+                trending: 'down'
+            },
+            {
+                title: 'Avg Order Value',
+                value: formatCurrency(avgOrderValue),
+                change: '+5.4%',
+                trending: 'up'
+            }
+        ];
+    };
+
+    const stats = calculateStats();
 
     const getStatusBadge = (status) => {
         const variants = {
@@ -269,8 +310,8 @@ const OrdersPage = () => {
         };
 
         return (
-            <Badge variant={variants[status]}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+            <Badge variant={variants[status?.toLowerCase()] || 'default'}>
+                {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown'}
             </Badge>
         );
     };
@@ -287,7 +328,7 @@ const OrdersPage = () => {
 
     const selectAllOrders = (checked) => {
         if (checked) {
-            setSelectedOrders(new Set(orders.map(order => order.id)));
+            setSelectedOrders(new Set(filteredOrders.map(order => order.id)));
         } else {
             setSelectedOrders(new Set());
         }
@@ -296,6 +337,39 @@ const OrdersPage = () => {
     const removeFilter = (filterId) => {
         setAppliedFilters(prev => prev.filter(f => f.id !== filterId));
     };
+
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+    };
+
+    // Loading state
+    if (loading && orders.length === 0) {
+        return (
+            <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-zinc-600 mx-auto mb-4" />
+                    <p className="text-zinc-600">Loading orders...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg max-w-md text-center">
+                    <strong>Error:</strong> {error}
+                    <button
+                        onClick={fetchOrders}
+                        className="mt-4 bg-red-100 hover:bg-red-200 px-4 py-2 rounded text-sm block mx-auto"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-zinc-50">
@@ -308,8 +382,8 @@ const OrdersPage = () => {
                             <div className="relative">
                                 <Bell className="h-6 w-6 text-zinc-600" />
                                 <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                  3
-                </span>
+                                    {statusCounts.pending}
+                                </span>
                             </div>
                         </div>
 
@@ -383,7 +457,7 @@ const OrdersPage = () => {
                 </div>
 
                 {/* Status Tabs */}
-                <div className="mb-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-zinc-200 ">
+                <div className="mb-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-zinc-200">
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
                         <TabsList>
                             <TabsTrigger value="all">All Orders ({statusCounts.all})</TabsTrigger>
@@ -440,9 +514,9 @@ const OrdersPage = () => {
                 {selectedOrders.size > 0 && (
                     <div className="mb-6 rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
                         <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-emerald-800">
-                <strong>{selectedOrders.size} orders selected</strong>
-              </span>
+                            <span className="text-sm font-medium text-emerald-800">
+                                <strong>{selectedOrders.size} orders selected</strong>
+                            </span>
                             <Button variant="secondary" size="sm">Update Status</Button>
                             <Button variant="secondary" size="sm">Export Selected</Button>
                             <Button variant="secondary" size="sm">Print Labels</Button>
@@ -457,7 +531,7 @@ const OrdersPage = () => {
                     <div className="grid grid-cols-7 gap-4 border-b border-zinc-200 bg-zinc-50 p-4 font-medium text-sm text-zinc-700">
                         <div className="w-12">
                             <Checkbox
-                                checked={selectedOrders.size === orders.length}
+                                checked={selectedOrders.size === filteredOrders.length && filteredOrders.length > 0}
                                 onCheckedChange={selectAllOrders}
                             />
                         </div>
@@ -469,7 +543,20 @@ const OrdersPage = () => {
                         <div className="w-12">Actions</div>
                     </div>
 
-                    {orders.map((order) => (
+                    {loading && (
+                        <div className="p-8 text-center">
+                            <Loader2 className="h-8 w-8 animate-spin text-zinc-600 mx-auto mb-2" />
+                            <p className="text-zinc-600">Loading orders...</p>
+                        </div>
+                    )}
+
+                    {!loading && filteredOrders.length === 0 && (
+                        <div className="p-8 text-center text-zinc-500">
+                            <p>No orders found{activeTab !== 'all' ? ` with status "${activeTab}"` : ''}.</p>
+                        </div>
+                    )}
+
+                    {!loading && filteredOrders.map((order) => (
                         <div
                             key={order.id}
                             className={`grid grid-cols-7 gap-4 p-4 border-b border-zinc-200 items-center hover:bg-zinc-50 ${
@@ -483,9 +570,9 @@ const OrdersPage = () => {
                                 />
                             </div>
                             <div>
-                                <div className="font-medium">#{order.id}</div>
+                                <div className="font-medium">#{order.orderNumber || order.id}</div>
                                 <div className="flex items-center gap-2 text-sm text-zinc-500">
-                                    {order.items} items • {order.shipping}
+                                    {order.items?.length || order.itemsCount || 0} items • {order.shippingType || order.shipping || 'Standard Shipping'}
                                     {order.priority && (
                                         <Badge variant="danger" className="px-1.5 py-0.5 text-xs">
                                             {order.priority}
@@ -494,19 +581,19 @@ const OrdersPage = () => {
                                 </div>
                             </div>
                             <div>
-                                <div className="font-medium">{order.customer}</div>
-                                <div className="text-sm text-zinc-500">{order.email}</div>
+                                <div className="font-medium">{order.customerName || order.customer}</div>
+                                <div className="text-sm text-zinc-500">{order.customerEmail || order.email}</div>
                             </div>
-                            <div className="font-medium">{order.amount}</div>
+                            <div className="font-medium">{formatCurrency(order.totalAmount || order.amount)}</div>
                             <div>{getStatusBadge(order.status)}</div>
                             <div>
-                                <div>{order.date}</div>
-                                <div className="text-sm text-zinc-500">{order.time}</div>
+                                <div>{new Date(order.createdAt || order.date).toLocaleDateString('en-KE')}</div>
+                                <div className="text-sm text-zinc-500">{new Date(order.createdAt || order.date).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}</div>
                             </div>
                             <div className="w-12">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger>
-                                        <Button variant="ghost" className="h-8 w-8 p-0" >
+                                        <Button variant="ghost" className="h-8 w-8 p-0">
                                             <MoreHorizontal className="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -525,15 +612,25 @@ const OrdersPage = () => {
                     {/* Pagination */}
                     <div className="flex items-center justify-between p-4 border-t border-zinc-200">
                         <div className="text-sm text-zinc-600">
-                            Showing 1-25 of 1,247 orders
+                            Showing {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements} orders
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button variant="secondary" size="sm">
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 0}
+                            >
                                 <ChevronLeft className="mr-1 h-4 w-4" />
                                 Previous
                             </Button>
-                            <span className="px-4 text-sm text-zinc-600">Page 1 of 50</span>
-                            <Button variant="secondary" size="sm">
+                            <span className="px-4 text-sm text-zinc-600">Page {currentPage + 1} of {totalPages}</span>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage >= totalPages - 1}
+                            >
                                 Next
                                 <ChevronRight className="ml-1 h-4 w-4" />
                             </Button>

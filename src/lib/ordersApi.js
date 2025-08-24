@@ -1,5 +1,6 @@
 // API base URL - updated to your backend URL
-import  API_BASE_URL  from '../Config';
+import  API_BASE_URL  from '../Config.js'; // Fixed import syntax
+
 // Generic API request handler with error handling
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -30,7 +31,7 @@ const apiRequest = async (endpoint, options = {}) => {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            throw new Error(errorData.error || errorData.message || `HTTP error! status: ${response.status}`);
         }
 
         return await response.json();
@@ -42,9 +43,15 @@ const apiRequest = async (endpoint, options = {}) => {
 
 // Orders API functions
 export const ordersApi = {
-    // Get all orders
-    getAllOrders: async () => {
-        return await apiRequest('/orders');
+    // Get all orders with pagination support
+    getAllOrders: async (page = 0, size = 25, sortBy = 'createdAt', sortDir = 'desc') => {
+        const params = new URLSearchParams({
+            page: page.toString(),
+            size: size.toString(),
+            sort: `${sortBy},${sortDir}`
+        });
+
+        return await apiRequest(`/orders?${params.toString()}`);
     },
 
     // Get specific order by ID
@@ -68,6 +75,14 @@ export const ordersApi = {
         });
     },
 
+    // Update order status specifically
+    updateOrderStatus: async (orderId, status) => {
+        return await apiRequest(`/orders/${orderId}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: status.toUpperCase() }),
+        });
+    },
+
     // Create or update order (using your custom endpoint)
     createOrUpdateOrder: async (orderData) => {
         return await apiRequest('/orders/createOrUpdateOrders', {
@@ -81,6 +96,32 @@ export const ordersApi = {
         return await apiRequest(`/orders/${id}`, {
             method: 'DELETE',
         });
+    },
+
+    // Get orders by status (when you add the endpoint)
+    getOrdersByStatus: async (status, page = 0, size = 25) => {
+        const params = new URLSearchParams({
+            page: page.toString(),
+            size: size.toString(),
+        });
+
+        return await apiRequest(`/orders/status/${status.toLowerCase()}?${params.toString()}`);
+    },
+
+    // Search orders
+    searchOrders: async (query, page = 0, size = 25) => {
+        const params = new URLSearchParams({
+            q: query,
+            page: page.toString(),
+            size: size.toString(),
+        });
+
+        return await apiRequest(`/orders/search?${params.toString()}`);
+    },
+
+    // Get order statistics
+    getOrderStats: async () => {
+        return await apiRequest('/orders/stats');
     },
 };
 
@@ -146,21 +187,42 @@ export const getOrderWithDetails = async (orderId) => {
     }
 };
 
-// Search orders function (you might want to add search endpoint to backend)
-export const searchOrders = async (searchTerm) => {
+// Enhanced search function with frontend filtering fallback
+export const searchOrders = async (searchTerm, page = 0, size = 25) => {
     try {
-        const allOrders = await ordersApi.getAllOrders();
+        // Try backend search first (if endpoint exists)
+        try {
+            return await ordersApi.searchOrders(searchTerm, page, size);
+        } catch (backendError) {
+            console.log('Backend search not available, falling back to frontend filtering');
 
-        if (!searchTerm) return allOrders;
+            // Fallback to frontend filtering
+            const allOrders = await ordersApi.getAllOrders(0, 1000); // Get more records for searching
+            const orders = allOrders.content || allOrders.data || allOrders;
 
-        // Frontend filtering - consider adding backend search for better performance
-        const filtered = allOrders.filter(order =>
-            order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            order.id?.toString().includes(searchTerm) ||
-            order.email?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+            if (!searchTerm) return allOrders;
 
-        return filtered;
+            const filtered = orders.filter(order =>
+                order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.id?.toString().includes(searchTerm) ||
+                order.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.orderNumber?.toString().includes(searchTerm)
+            );
+
+            // Simulate pagination for frontend filtering
+            const startIndex = page * size;
+            const endIndex = startIndex + size;
+            const paginatedResults = filtered.slice(startIndex, endIndex);
+
+            return {
+                content: paginatedResults,
+                totalElements: filtered.length,
+                totalPages: Math.ceil(filtered.length / size),
+                number: page,
+                size: size
+            };
+        }
     } catch (error) {
         console.error('Error searching orders:', error);
         throw error;
@@ -178,3 +240,18 @@ export const withLoading = (apiFunction) => {
         }
     };
 };
+
+// Default export for compatibility with your Orders page component
+const defaultOrdersApi = {
+    getAllOrders: ordersApi.getAllOrders,
+    getOrderById: ordersApi.getOrderById,
+    createOrder: ordersApi.createOrder,
+    updateOrder: ordersApi.updateOrder,
+    updateOrderStatus: ordersApi.updateOrderStatus,
+    deleteOrder: ordersApi.deleteOrder,
+    getOrdersByStatus: ordersApi.getOrdersByStatus,
+    searchOrders: ordersApi.searchOrders,
+    getOrderStats: ordersApi.getOrderStats,
+};
+
+export default defaultOrdersApi;
