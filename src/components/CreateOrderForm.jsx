@@ -1,527 +1,340 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import {
-    X,
-    Plus,
-    Minus,
-    Search,
-    User,
-    Package,
-    CreditCard,
-    Truck
-} from 'lucide-react';
+import { toast } from "sonner"
+import { useState, useEffect } from "react"
 
-const CreateOrderForm = ({ isOpen, onClose }) => {
-    const [formData, setFormData] = useState({
-        customer: {
-            name: '',
-            email: '',
-            phone: '',
-            address: {
-                street: '',
-                city: '',
-                state: '',
-                zipCode: '',
-                country: 'India'
-            }
-        },
-        items: [
-            {
-                id: '',
-                name: '',
-                sku: '',
-                quantity: 1,
-                price: '',
-                total: 0
-            }
-        ],
-        shipping: {
-            method: '',
-            cost: 0,
-            address: 'same' // 'same' or 'different'
-        },
-        payment: {
-            method: '',
-            status: 'pending'
-        },
-        notes: '',
-        priority: 'normal'
+// Base URL configuration
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080"
+
+export function CreateOrderForm({ onSuccess, onClose, isOpen }) {
+    const [formValues, setFormValues] = useState({
+        customerName: '',
+        customerEmail: '',
+        customerPhone: '',
+        shippingAddress: '',
+        productName: '',
+        quantity: 1,
+        price: 0,
+        totalAmount: 0,
+        paymentMethod: '',
+        orderNotes: '',
+        isPriority: false
     });
 
-    const [orderTotal, setOrderTotal] = useState(0);
-    const [tax, setTax] = useState(0);
-    const [grandTotal, setGrandTotal] = useState(0);
+    // Calculate total amount whenever quantity or price changes
+    useEffect(() => {
+        const quantity = Number(formValues.quantity) || 0;
+        const price = Number(formValues.price) || 0;
+        const total = quantity * price;
 
-    const handleInputChange = (section, field, value, index = null) => {
-        setFormData(prev => {
-            const updated = { ...prev };
+        setFormValues(prev => ({
+            ...prev,
+            totalAmount: total
+        }));
+    }, [formValues.quantity, formValues.price]);
 
-            if (section === 'items' && index !== null) {
-                updated.items[index] = { ...updated.items[index], [field]: value };
+    // Handle input changes
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormValues(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
+    };
 
-                // Calculate item total
-                if (field === 'quantity' || field === 'price') {
-                    const quantity = field === 'quantity' ? value : updated.items[index].quantity;
-                    const price = field === 'price' ? value : updated.items[index].price;
-                    updated.items[index].total = quantity * price;
-                }
-            } else if (section === 'customer' && typeof updated[section][field] === 'object') {
-                updated[section][field] = { ...updated[section][field], ...value };
-            } else {
-                if (updated[section]) {
-                    updated[section][field] = value;
-                } else {
-                    updated[field] = value;
-                }
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+
+        const order = {
+            customerName: formValues.customerName,
+            customerEmail: formValues.customerEmail,
+            customerPhone: formValues.customerPhone,
+            shippingAddress: formValues.shippingAddress,
+            productName: formValues.productName,
+            quantity: parseInt(formValues.quantity) || 1,
+            price: parseFloat(formValues.price) || 0,
+            totalAmount: parseFloat(formValues.totalAmount) || 0,
+            paymentMethod: formValues.paymentMethod,
+            orderNotes: formValues.orderNotes,
+            isPriority: formValues.isPriority,
+        }
+
+        console.log("Submitting order:", order);
+
+        try {
+            const response = await fetch(`${BASE_URL}/api/order`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(order),
+            })
+
+            console.log("Response status:", response);
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                console.error("Backend error:", errorData);
+                // Instead of throwing an error that will be caught by our own catch block,
+                // we can handle the error directly here
+                toast.error(`❌ Failed to create order: ${response.status} ${response.statusText}`);
+                return;
             }
 
-            return updated;
-        });
-    };
 
-    const addItem = () => {
-        setFormData(prev => ({
-            ...prev,
-            items: [
-                ...prev.items,
-                {
-                    id: '',
-                    name: '',
-                    sku: '',
-                    quantity: 1,
-                    price: '',
-                    total: 0
-                }
-            ]
-        }));
-    };
+            const createdOrder = await response.json();
+            console.log("Order created successfully:", createdOrder);
 
-    const removeItem = (index) => {
-        setFormData(prev => ({
-            ...prev,
-            items: prev.items.filter((_, i) => i !== index)
-        }));
-    };
+            toast.success(`✅ Order for ${order.customerName} created successfully!`);
+            setFormValues({
+                customerName: '',
+                customerEmail: '',
+                customerPhone: '',
+                shippingAddress: '',
+                productName: '',
+                quantity: 1,
+                price: 0,
+                totalAmount: 0,
+                paymentMethod: '',
+                orderNotes: '',
+                isPriority: false
+            });
 
-    const calculateTotals = () => {
-        const subtotal = formData.items.reduce((sum, item) => sum + (item.total || 0), 0);
-        const taxAmount = subtotal * 0.18; // 18% GST
-        const shippingCost = formData.shipping.cost || 0;
-        const total = subtotal + taxAmount + shippingCost;
+            if (onSuccess) {
+                console.log("Calling onSuccess callback");
+                onSuccess();
+            }
 
-        setOrderTotal(subtotal);
-        setTax(taxAmount);
-        setGrandTotal(total);
-    };
+            if (onClose) {
+                onClose();
+            }
+        } catch (error) {
+            // This catch block will handle unexpected errors like network issues
+            console.error("Error creating order:", error);
+            toast.error(`❌ ${error.message || "An unexpected error occurred"}`);
+        }
 
-    React.useEffect(() => {
-        calculateTotals();
-    }, [formData.items, formData.shipping.cost]);
-
-    const handleSubmit = () => {
-        console.log('Order Data:', formData);
-        // Handle form submission
-        onClose();
-    };
+    }
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b">
-                    <h2 className="text-2xl font-bold text-zinc-900">Create Manual Order</h2>
-                    <Button
-                        variant="ghost"
-                        size="sm"
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4 backdrop-blur-sm bg-black/30">
+            {/* Glassmorphism Modal */}
+            <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-white/80 backdrop-blur-md border border-white/20 shadow-xl">
+                <div className="flex items-center justify-between p-6 border-b border-white/30">
+                    <h2 className="text-2xl font-bold text-gray-900">Create Manual Order</h2>
+                    <button
                         onClick={onClose}
-                        className="h-8 w-8 p-0"
+                        className="text-gray-700 hover:text-gray-900 transition-colors"
                     >
-                        <X className="h-4 w-4" />
-                    </Button>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
 
-                <div className="p-6 space-y-8">
-                    {/* Customer Information */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <User className="h-5 w-5" />
-                                Customer Information
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="customer-name">Customer Name *</Label>
-                                    <Input
-                                        id="customer-name"
-                                        placeholder="Enter customer name"
-                                        value={formData.customer.name}
-                                        onChange={(e) => handleInputChange('customer', 'name', e.target.value)}
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="customer-email">Email Address *</Label>
-                                    <Input
-                                        id="customer-email"
-                                        type="email"
-                                        placeholder="customer@example.com"
-                                        value={formData.customer.email}
-                                        onChange={(e) => handleInputChange('customer', 'email', e.target.value)}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="customer-phone">Phone Number</Label>
-                                    <Input
-                                        id="customer-phone"
-                                        placeholder="+91 9876543210"
-                                        value={formData.customer.phone}
-                                        onChange={(e) => handleInputChange('customer', 'phone', e.target.value)}
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="priority">Order Priority</Label>
-                                    <Select
-                                        value={formData.priority}
-                                        onValueChange={(value) => handleInputChange('', 'priority', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="low">Low</SelectItem>
-                                            <SelectItem value="normal">Normal</SelectItem>
-                                            <SelectItem value="high">High</SelectItem>
-                                            <SelectItem value="urgent">Urgent</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            {/* Billing Address */}
-                            <div>
-                                <Label className="text-base font-semibold">Billing Address</Label>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                                    <div className="md:col-span-2">
-                                        <Label htmlFor="street">Street Address *</Label>
-                                        <Input
-                                            id="street"
-                                            placeholder="123 Main Street, Apartment 4B"
-                                            value={formData.customer.address.street}
-                                            onChange={(e) => handleInputChange('customer', 'address', { street: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="city">City *</Label>
-                                        <Input
-                                            id="city"
-                                            placeholder="Mumbai"
-                                            value={formData.customer.address.city}
-                                            onChange={(e) => handleInputChange('customer', 'address', { city: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="state">State *</Label>
-                                        <Input
-                                            id="state"
-                                            placeholder="Maharashtra"
-                                            value={formData.customer.address.state}
-                                            onChange={(e) => handleInputChange('customer', 'address', { state: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="zipCode">PIN Code *</Label>
-                                        <Input
-                                            id="zipCode"
-                                            placeholder="400001"
-                                            value={formData.customer.address.zipCode}
-                                            onChange={(e) => handleInputChange('customer', 'address', { zipCode: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="country">Country</Label>
-                                        <Select
-                                            value={formData.customer.address.country}
-                                            onValueChange={(value) => handleInputChange('customer', 'address', { country: value })}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="India">India</SelectItem>
-                                                <SelectItem value="USA">United States</SelectItem>
-                                                <SelectItem value="UK">United Kingdom</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Order Items */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Package className="h-5 w-5" />
-                                Order Items
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {formData.items.map((item, index) => (
-                                    <div key={index} className="p-4 border rounded-lg">
-                                        <div className="flex items-center justify-between mb-4">
-                                            <span className="font-medium">Item {index + 1}</span>
-                                            {formData.items.length > 1 && (
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => removeItem(index)}
-                                                >
-                                                    <Minus className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                                            <div className="md:col-span-2">
-                                                <Label>Product Name *</Label>
-                                                <div className="flex gap-2">
-                                                    <Input
-                                                        placeholder="Search or enter product name"
-                                                        value={item.name}
-                                                        onChange={(e) => handleInputChange('items', 'name', e.target.value, index)}
-                                                        required
-                                                    />
-                                                    <Button type="button" variant="outline" size="sm">
-                                                        <Search className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <Label>SKU</Label>
-                                                <Input
-                                                    placeholder="SKU-001"
-                                                    value={item.sku}
-                                                    onChange={(e) => handleInputChange('items', 'sku', e.target.value, index)}
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label>Quantity *</Label>
-                                                <Input
-                                                    type="number"
-                                                    min="1"
-                                                    value={item.quantity}
-                                                    onChange={(e) => handleInputChange('items', 'quantity', parseInt(e.target.value) || 1, index)}
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label>Unit Price *</Label>
-                                                <Input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder="₹0.00"
-                                                    value={item.price}
-                                                    onChange={(e) => handleInputChange('items', 'price', parseFloat(e.target.value) || 0, index)}
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-2 text-right">
-                      <span className="text-sm text-zinc-600">
-                        Total: <strong>₹{item.total.toFixed(2)}</strong>
-                      </span>
-                                        </div>
-                                    </div>
-                                ))}
-
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={addItem}
-                                    className="w-full"
-                                >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Another Item
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Shipping Information */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Truck className="h-5 w-5" />
-                                Shipping Information
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label>Shipping Method *</Label>
-                                    <Select
-                                        value={formData.shipping.method}
-                                        onValueChange={(value) => handleInputChange('shipping', 'method', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select shipping method" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="standard">Standard Shipping (3-5 days)</SelectItem>
-                                            <SelectItem value="express">Express Shipping (1-2 days)</SelectItem>
-                                            <SelectItem value="overnight">Overnight Delivery</SelectItem>
-                                            <SelectItem value="pickup">Store Pickup</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <Label>Shipping Cost</Label>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="₹0.00"
-                                        value={formData.shipping.cost}
-                                        onChange={(e) => handleInputChange('shipping', 'cost', parseFloat(e.target.value) || 0)}
-                                    />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Payment Information */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <CreditCard className="h-5 w-5" />
-                                Payment Information
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label>Payment Method *</Label>
-                                    <Select
-                                        value={formData.payment.method}
-                                        onValueChange={(value) => handleInputChange('payment', 'method', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select payment method" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="cod">Cash on Delivery</SelectItem>
-                                            <SelectItem value="upi">UPI</SelectItem>
-                                            <SelectItem value="card">Credit/Debit Card</SelectItem>
-                                            <SelectItem value="netbanking">Net Banking</SelectItem>
-                                            <SelectItem value="wallet">Digital Wallet</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <Label>Payment Status</Label>
-                                    <Select
-                                        value={formData.payment.status}
-                                        onValueChange={(value) => handleInputChange('payment', 'status', value)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="pending">Pending</SelectItem>
-                                            <SelectItem value="paid">Paid</SelectItem>
-                                            <SelectItem value="partial">Partially Paid</SelectItem>
-                                            <SelectItem value="refunded">Refunded</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Order Summary */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Order Summary</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-2">
-                                <div className="flex justify-between">
-                                    <span>Subtotal:</span>
-                                    <span>₹{orderTotal.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>Tax (18% GST):</span>
-                                    <span>₹{tax.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>Shipping:</span>
-                                    <span>₹{formData.shipping.cost.toFixed(2)}</span>
-                                </div>
-                                <Separator />
-                                <div className="flex justify-between text-lg font-bold">
-                                    <span>Grand Total:</span>
-                                    <span>₹{grandTotal.toFixed(2)}</span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Order Notes */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Additional Notes</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Textarea
-                                placeholder="Enter any special instructions or notes for this order..."
-                                value={formData.notes}
-                                onChange={(e) => handleInputChange('', 'notes', e.target.value)}
-                                rows={3}
+                <div className="p-6">
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <label htmlFor="customerName" className="text-sm font-medium text-gray-800">
+                                Customer Name *
+                            </label>
+                            <input
+                                id="customerName"
+                                name="customerName"
+                                placeholder="Enter customer name"
+                                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white/70 text-gray-900 caret-gray-900"
+                                required
+                                value={formValues.customerName}
+                                onChange={handleInputChange}
                             />
-                        </CardContent>
-                    </Card>
+                        </div>
 
-                    {/* Form Actions */}
-                    <div className="flex items-center justify-end gap-4 pt-6">
-                        <Button type="button" variant="outline" onClick={onClose}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleSubmit} className="px-8">
-                            Create Order
-                        </Button>
-                    </div>
+                        <div className="space-y-2">
+                            <label htmlFor="customerEmail" className="text-sm font-medium text-gray-800">
+                                Customer Email *
+                            </label>
+                            <input
+                                id="customerEmail"
+                                name="customerEmail"
+                                type="email"
+                                placeholder="customer@example.com"
+                                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white/70 text-gray-900 caret-gray-900"
+                                required
+                                value={formValues.customerEmail}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="customerPhone" className="text-sm font-medium text-gray-800">
+                                Customer Phone
+                            </label>
+                            <input
+                                id="customerPhone"
+                                name="customerPhone"
+                                placeholder="Enter phone number"
+                                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white/70 text-gray-900 caret-gray-900"
+                                value={formValues.customerPhone}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="shippingAddress" className="text-sm font-medium text-gray-800">
+                                Shipping Address *
+                            </label>
+                            <textarea
+                                id="shippingAddress"
+                                name="shippingAddress"
+                                placeholder="Enter shipping address"
+                                rows="3"
+                                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors resize-none bg-white/70 text-gray-900 caret-gray-900"
+                                required
+                                value={formValues.shippingAddress}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="productName" className="text-sm font-medium text-gray-800">
+                                Product Name *
+                            </label>
+                            <input
+                                id="productName"
+                                name="productName"
+                                placeholder="Enter product name"
+                                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white/70 text-gray-900 caret-gray-900"
+                                required
+                                value={formValues.productName}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="quantity" className="text-sm font-medium text-gray-800">
+                                Quantity *
+                            </label>
+                            <input
+                                id="quantity"
+                                name="quantity"
+                                type="number"
+                                min="1"
+                                placeholder="1"
+                                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white/70 text-gray-900 caret-gray-900"
+                                required
+                                value={formValues.quantity}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="price" className="text-sm font-medium text-gray-800">
+                                Price (Ksh) *
+                            </label>
+                            <input
+                                id="price"
+                                name="price"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white/70 text-gray-900 caret-gray-900"
+                                required
+                                value={formValues.price}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="totalAmount" className="text-sm font-medium text-gray-800">
+                                Total Amount (Ksh)
+                            </label>
+                            <input
+                                id="totalAmount"
+                                name="totalAmount"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="0.00"
+                                className="w-full border border-gray-300 p-3 rounded-lg bg-gray-100/80 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900"
+                                value={formValues.totalAmount.toFixed(2)}
+                                readOnly
+                            />
+                            <p className="text-xs text-gray-600">Automatically calculated from quantity × price</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="paymentMethod" className="text-sm font-medium text-gray-800">
+                                Payment Method *
+                            </label>
+                            <select
+                                id="paymentMethod"
+                                name="paymentMethod"
+                                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white/70 text-gray-900"
+                                required
+                                value={formValues.paymentMethod}
+                                onChange={handleInputChange}
+                            >
+                                <option value="">Select a payment method</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Card">Card</option>
+                                <option value="Mobile Money">Mobile Money</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="orderNotes" className="text-sm font-medium text-gray-800">
+                                Order Notes
+                            </label>
+                            <textarea
+                                id="orderNotes"
+                                name="orderNotes"
+                                placeholder="Enter any additional notes"
+                                rows="3"
+                                className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors resize-none bg-white/70 text-gray-900 caret-gray-900"
+                                value={formValues.orderNotes}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="flex gap-4">
+                            <div className="flex items-center">
+                                <input
+                                    id="isPriority"
+                                    name="isPriority"
+                                    type="checkbox"
+                                    className="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    checked={formValues.isPriority}
+                                    onChange={handleInputChange}
+                                />
+                                <label htmlFor="isPriority" className="text-sm font-medium text-gray-800">
+                                    Priority Order
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="pt-4 flex gap-3">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors font-medium bg-white/50 backdrop-blur-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium backdrop-blur-sm shadow-lg"
+                            >
+                                Create Order
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-    );
-};
+    )
+}
 
 export default CreateOrderForm;

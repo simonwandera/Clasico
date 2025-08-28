@@ -1,7 +1,11 @@
 import {useQuery} from "@tanstack/react-query";
 import API_BASE_URL from "../Config.js";
+import CreateOrderForm from "../components/CreateOrderForm";
+import {useState} from "react"; // Import the CreateOrderForm component
 
 export default function Dashboard() {
+    // State for controlling the modal visibility
+    const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
 
     const {data, isPending, error} = useQuery({
         queryKey: ['kpis'],
@@ -12,6 +16,12 @@ export default function Dashboard() {
         queryKey: ['recent'],
         queryFn: getRecentActivities
     });
+
+    // Function to handle order creation
+    const handleOrderSuccess = () => {
+
+        console.log("Order created successfully");
+    };
 
     if (isPending) return <div>Loading...</div>;
     if (error) return <div>Error: {error.message}</div>;
@@ -84,7 +94,9 @@ export default function Dashboard() {
             <section>
                 <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
                 <div className="flex gap-4">
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                            onClick={() => setIsCreateOrderOpen(true)} // Add the onClick handler
+                    >
                         Create New Order
                     </button>
                     <button className="bg-gray-200 text-white px-4 py-2 rounded hover:bg-gray-300">
@@ -94,6 +106,13 @@ export default function Dashboard() {
 
                 </div>
             </section>
+            {/* CreateOrderForm component */}
+            <CreateOrderForm
+                isOpen={isCreateOrderOpen}
+                onClose={() => setIsCreateOrderOpen(false)}
+                onSuccess={handleOrderSuccess}
+            />
+
         </div>
     );
 }
